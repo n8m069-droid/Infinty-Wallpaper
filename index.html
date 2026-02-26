@@ -4,678 +4,141 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Gallery Clock · Digital Wellbeing</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,700;1,300&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&family=Cinzel:wght@400;700&family=Righteous&family=Orbitron:wght@400;700;900&family=Caveat:wght@400;700&family=Josefin+Sans:wght@100;300;400&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,700;1,300&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&family=Cinzel:wght@400;700&family=Righteous&family=Caveat:wght@400;700&family=Josefin+Sans:wght@100;300;400&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
 
-html, body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-}
-
-/* ── BACKGROUND ── */
+/* ── BACKGROUNDS ── */
 #bg, #bg2 {
-  position: fixed;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: opacity 0.8s cubic-bezier(.4,0,.2,1);
+  position: fixed; inset: 0;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  transition: opacity 0.9s cubic-bezier(.4,0,.2,1);
 }
 #bg2 { opacity: 0; z-index: 1; }
 
-/* Mood tint overlay — changes color per wellbeing state */
-#moodTint {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  transition: background 2s ease;
-}
+/* ── AMBIENT CANVAS (sits between bg and overlay) ── */
+#ambientCanvas { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
 
+/* ── MOOD TINT ── */
+#moodTint { position: fixed; inset: 0; z-index: 3; pointer-events: none; transition: background 2.5s ease; }
+
+/* ── VIGNETTE ── */
 .overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  background: linear-gradient(
-    160deg,
-    rgba(0,0,0,0.25) 0%,
-    rgba(0,0,0,0) 35%,
-    rgba(0,0,0,0) 55%,
-    rgba(0,0,0,0.65) 100%
-  );
-  pointer-events: none;
+  position: fixed; inset: 0; z-index: 3; pointer-events: none;
+  background: linear-gradient(160deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 58%, rgba(0,0,0,.7) 100%);
 }
 
-/* ── LOADING BAR ── */
-#loadBar {
-  position: fixed;
-  top: 0; left: 0;
-  height: 3px;
-  width: 0;
-  z-index: 100;
-  transition: width 0.4s ease, opacity 0.4s ease, background 1s ease;
-}
+/* ── LOAD BAR ── */
+#loadBar { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 100; transition: width .4s ease, opacity .4s ease, background 1.2s ease; }
 
 /* ── UI LAYER ── */
-.ui {
-  position: fixed;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: clamp(16px, 3vw, 48px);
-  pointer-events: none;
-}
+.ui { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(16px,3vw,48px); pointer-events: none; }
 
-/* ── TOP BAR ── */
-.top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
+.top { display: flex; align-items: flex-start; justify-content: space-between; }
+.brand { font-family: 'Josefin Sans', sans-serif; font-weight: 100; font-size: clamp(11px,1.2vw,16px); letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.5); text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+.img-count { font-family: 'Share Tech Mono', monospace; font-size: clamp(11px,1vw,14px); color: rgba(255,255,255,.35); letter-spacing: .15em; }
 
-.brand {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 100;
-  font-size: clamp(11px, 1.2vw, 16px);
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
-}
-
-.img-count {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(11px, 1vw, 14px);
-  color: rgba(255,255,255,0.35);
-  letter-spacing: 0.15em;
-}
-
-/* ── CLOCK CONTAINER ── */
-#clockWrap {
-  position: absolute;
-  z-index: 4;
-  pointer-events: none;
-  transition: opacity 0.5s ease;
-}
+/* ── CLOCK WRAP ── */
+#clockWrap { position: absolute; z-index: 6; pointer-events: none; transition: opacity .5s ease; }
 #clockWrap.hidden { opacity: 0; }
 
-/* ── BOTTOM BAR ── */
-.bottom {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
+/* ── BOTTOM ── */
+.bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .photo-info { max-width: 55%; }
+.photo-author { font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: clamp(10px,1.1vw,14px); color: rgba(255,255,255,.45); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 4px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.photo-id { font-family: 'Share Tech Mono', monospace; font-size: clamp(9px,.9vw,12px); color: rgba(255,255,255,.25); }
 
-.photo-author {
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
-  font-size: clamp(10px, 1.1vw, 14px);
-  color: rgba(255,255,255,0.45);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
-}
-
-.photo-id {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(9px, 0.9vw, 12px);
-  color: rgba(255,255,255,0.25);
-}
-
-/* ── NEXT BUTTON ── */
-#nextBtn {
-  pointer-events: all;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  cursor: pointer;
-  padding: clamp(10px,1.5vw,16px) clamp(16px,2.5vw,32px);
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 300;
-  font-size: clamp(11px, 1.2vw, 15px);
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  outline: none;
-  border-radius: 2px;
-  transition: background 0.25s, border-color 0.25s, transform 0.1s;
-  flex-shrink: 0;
-}
-#nextBtn:hover {
-  background: rgba(255,255,255,0.22);
-  border-color: rgba(255,255,255,0.4);
-}
-#nextBtn:active { transform: scale(0.97); }
-#nextBtn svg {
-  width: clamp(14px,1.5vw,20px);
-  height: clamp(14px,1.5vw,20px);
-  stroke: rgba(255,255,255,0.8);
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.3s;
-}
+/* ── NEXT BTN ── */
+#nextBtn { pointer-events: all; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.2); color: #fff; cursor: pointer; padding: clamp(10px,1.5vw,16px) clamp(16px,2.5vw,32px); font-family: 'Josefin Sans', sans-serif; font-weight: 300; font-size: clamp(11px,1.2vw,15px); letter-spacing: .25em; text-transform: uppercase; outline: none; border-radius: 2px; transition: background .25s, border-color .25s, transform .1s; flex-shrink: 0; }
+#nextBtn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); }
+#nextBtn:active { transform: scale(.97); }
+#nextBtn svg { width: clamp(14px,1.5vw,20px); height: clamp(14px,1.5vw,20px); stroke: rgba(255,255,255,.8); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s; }
 #nextBtn:hover svg { transform: translateX(4px); }
 
-/* ══════════════════════════════════════════
-   DIGITAL WELLBEING HUD
-══════════════════════════════════════════ */
+/* ══════════════════════════════
+   WELLBEING HUD
+══════════════════════════════ */
+#wbPill { position: fixed; top: clamp(16px,2.5vw,36px); left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: all; cursor: pointer; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.45); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.14); border-radius: 100px; padding: 7px 16px 7px 12px; transition: background .3s, transform .2s; white-space: nowrap; user-select: none; }
+#wbPill:hover { background: rgba(0,0,0,.6); transform: translateX(-50%) scale(1.04); }
+#wbDot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; transition: background 1.5s ease, box-shadow 1.5s ease; }
+#wbLabel { font-family: 'Josefin Sans', sans-serif; font-weight: 300; font-size: clamp(10px,1vw,13px); letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+#wbSessionTime { font-family: 'Share Tech Mono', monospace; font-size: clamp(10px,.9vw,12px); color: rgba(255,255,255,.35); letter-spacing: .1em; margin-left: 4px; }
 
-/* Pill badge — top center */
-#wbPill {
-  position: fixed;
-  top: clamp(16px, 2.5vw, 36px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  pointer-events: all;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 100px;
-  padding: 7px 16px 7px 12px;
-  transition: background 0.3s, border-color 0.3s, transform 0.2s;
-  white-space: nowrap;
-  user-select: none;
-}
-#wbPill:hover {
-  background: rgba(0,0,0,0.6);
-  transform: translateX(-50%) scale(1.04);
-}
+/* ── PANEL ── */
+#wbPanel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.92); z-index: 20; width: min(480px,90vw); background: rgba(8,8,12,.9); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 32px; pointer-events: all; opacity: 0; visibility: hidden; transition: opacity .3s, transform .3s, visibility .3s; }
+#wbPanel.open { opacity: 1; visibility: visible; transform: translate(-50%,-50%) scale(1); }
 
-#wbDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: background 1.5s ease, box-shadow 1.5s ease;
-}
+.wb-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.wb-panel-title { font-family: 'Josefin Sans', sans-serif; font-weight: 100; font-size: 11px; letter-spacing: .5em; text-transform: uppercase; color: rgba(255,255,255,.4); }
+.wb-close { background: none; border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.5); cursor: pointer; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: background .2s, color .2s; }
+.wb-close:hover { background: rgba(255,255,255,.1); color: #fff; }
 
-#wbLabel {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 300;
-  font-size: clamp(10px, 1vw, 13px);
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.75);
-}
+.wb-state-card { border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; position: relative; overflow: hidden; border-top: 2px solid transparent; transition: background 1.5s ease, border-top-color 1.5s ease; }
+.wb-state-card::before { content: ''; position: absolute; inset: 0; opacity: .06; background: radial-gradient(circle at 70% 30%, rgba(255,255,255,.8), transparent 60%); pointer-events: none; }
+.wb-state-name { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(22px,3vw,32px); color: #fff; line-height: 1; margin-bottom: 6px; }
+.wb-state-desc { font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 12px; color: rgba(255,255,255,.6); line-height: 1.5; }
 
-#wbSessionTime {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(10px, 0.9vw, 12px);
-  color: rgba(255,255,255,0.35);
-  letter-spacing: 0.1em;
-  margin-left: 4px;
-}
-
-/* ── WELLBEING PANEL ── */
-#wbPanel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.92);
-  z-index: 20;
-  width: min(480px, 90vw);
-  background: rgba(8,8,12,0.88);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-  padding: 32px;
-  pointer-events: all;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
-}
-#wbPanel.open {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.wb-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-.wb-panel-title {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 100;
-  font-size: 11px;
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-}
-.wb-close {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.5);
-  cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  transition: background 0.2s, color 0.2s;
-}
-.wb-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
-
-/* State card */
-.wb-state-card {
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin-bottom: 20px;
-  transition: background 1.5s ease;
-  position: relative;
-  overflow: hidden;
-}
-.wb-state-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.06;
-  background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.8), transparent 60%);
-  pointer-events: none;
-}
-.wb-state-name {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-size: clamp(22px, 3vw, 32px);
-  color: #fff;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.wb-state-desc {
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
-  font-size: 12px;
-  color: rgba(255,255,255,0.6);
-  letter-spacing: 0.05em;
-  line-height: 1.5;
-}
-
-/* Stats grid */
-.wb-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-.wb-stat {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-.wb-stat-label {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 100;
-  font-size: 9px;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.3);
-  margin-bottom: 6px;
-}
-.wb-stat-value {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 20px;
-  color: rgba(255,255,255,0.85);
-  letter-spacing: 0.05em;
-}
-
-/* Mini bar chart for interaction rate */
-.wb-rate-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 28px;
-  margin-top: 4px;
-}
-.wb-rate-bar {
-  flex: 1;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.15);
-  transition: height 0.4s ease, background 0.4s ease;
-  min-height: 3px;
-}
-
-/* Mood toggle row */
-.wb-mood-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.wb-mood-btn {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.5);
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 300;
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
+.wb-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.wb-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; padding: 14px 16px; }
+.wb-stat-label { font-family: 'Josefin Sans', sans-serif; font-weight: 100; font-size: 9px; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: 6px; }
+.wb-stat-value { font-family: 'Share Tech Mono', monospace; font-size: 20px; color: rgba(255,255,255,.85); }
+.wb-rate-bars { display: flex; align-items: flex-end; gap: 3px; height: 28px; margin-top: 4px; }
+.wb-rate-bar { flex: 1; border-radius: 2px; min-height: 3px; transition: height .4s, background .4s; }
+.wb-mood-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.wb-mood-btn { flex: 1; min-width: 80px; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: rgba(255,255,255,.5); font-family: 'Josefin Sans', sans-serif; font-weight: 300; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; cursor: pointer; transition: background .2s, border-color .2s, color .2s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .wb-mood-btn .mood-icon { font-size: 16px; }
-.wb-mood-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85); }
-.wb-mood-btn.active { border-color: rgba(255,255,255,0.35); color: #fff; }
+.wb-mood-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
 
-/* Break banner */
-#breakBanner {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 15;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(20px);
-  padding: 20px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  transform: translateY(-100%);
-  transition: transform 0.5s cubic-bezier(.4,0,.2,1);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
+/* ── BREAK BANNER ── */
+#breakBanner { position: fixed; top: 0; left: 0; right: 0; z-index: 15; background: rgba(0,0,0,.88); backdrop-filter: blur(20px); padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; transform: translateY(-100%); transition: transform .5s cubic-bezier(.4,0,.2,1); border-bottom: 1px solid rgba(255,255,255,.08); }
 #breakBanner.show { transform: translateY(0); }
-.break-msg {
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
-  font-size: clamp(12px, 1.5vw, 15px);
-  color: rgba(255,255,255,0.7);
-  letter-spacing: 0.05em;
-}
-.break-msg strong {
-  color: #fff;
-  font-weight: 400;
-}
-#breakDismiss {
-  pointer-events: all;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.7);
-  cursor: pointer;
-  padding: 8px 20px;
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 300;
-  font-size: 11px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  border-radius: 2px;
-  white-space: nowrap;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-#breakDismiss:hover { background: rgba(255,255,255,0.18); }
+.break-msg { font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: clamp(12px,1.5vw,15px); color: rgba(255,255,255,.7); }
+.break-msg strong { color: #fff; font-weight: 400; }
+#breakDismiss { pointer-events: all; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.7); cursor: pointer; padding: 8px 20px; font-family: 'Josefin Sans', sans-serif; font-weight: 300; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; border-radius: 2px; white-space: nowrap; transition: background .2s; flex-shrink: 0; }
+#breakDismiss:hover { background: rgba(255,255,255,.18); }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════
    CLOCK STYLES
-══════════════════════════════════════════ */
+══════════════════════════════ */
+.clock-minimal-digital { top: clamp(16px,3vw,48px); right: clamp(16px,3vw,48px); text-align: right; }
+.clock-minimal-digital .time { font-family: 'Share Tech Mono', monospace; font-size: clamp(36px,6vw,96px); color: #fff; letter-spacing: -.02em; line-height: 1; text-shadow: 0 0 40px rgba(255,255,255,.3); }
+.clock-minimal-digital .date { font-family: 'Josefin Sans', sans-serif; font-weight: 100; font-size: clamp(10px,1vw,14px); color: rgba(255,255,255,.4); letter-spacing: .4em; text-transform: uppercase; margin-top: 4px; }
 
-.clock-minimal-digital {
-  top: clamp(16px,3vw,48px);
-  right: clamp(16px,3vw,48px);
-  text-align: right;
-}
-.clock-minimal-digital .time {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(36px, 6vw, 96px);
-  color: #fff;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  text-shadow: 0 0 40px rgba(255,255,255,0.3);
-}
-.clock-minimal-digital .date {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 100;
-  font-size: clamp(10px, 1vw, 14px);
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  margin-top: 4px;
-}
-
-.clock-analog {
-  bottom: clamp(80px,12vw,140px);
-  left: 50%;
-  transform: translateX(-50%);
-}
+.clock-analog { bottom: clamp(80px,12vw,140px); left: 50%; transform: translateX(-50%); }
 .clock-analog canvas { display: block; }
 
-.clock-neon {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-.clock-neon .time {
-  font-family: 'Orbitron', monospace;
-  font-weight: 900;
-  font-size: clamp(40px, 7vw, 110px);
-  color: #0ff;
-  text-shadow: 0 0 10px #0ff, 0 0 30px #0ff, 0 0 60px #0af, 0 0 100px #06f;
-  letter-spacing: 0.06em;
-  line-height: 1;
-  animation: neonPulse 2s ease-in-out infinite;
-}
-.clock-neon .date {
-  font-family: 'Orbitron', monospace;
-  font-size: clamp(9px, 1vw, 13px);
-  color: rgba(0,255,255,0.5);
-  letter-spacing: 0.3em;
-  margin-top: 8px;
-  text-transform: uppercase;
-}
-@keyframes neonPulse {
-  0%,100% { opacity: 1; }
-  50% { opacity: 0.85; }
-}
+.clock-sundial { bottom: clamp(70px,10vw,130px); left: 50%; transform: translateX(-50%); }
+.clock-sundial canvas { display: block; }
 
-.clock-editorial {
-  top: 50%;
-  left: clamp(16px,3vw,48px);
-  transform: translateY(-50%);
-}
-.clock-editorial .time {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-size: clamp(48px, 8vw, 130px);
-  color: rgba(255,255,255,0.9);
-  line-height: 0.9;
-  text-shadow: 2px 4px 30px rgba(0,0,0,0.6);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  letter-spacing: -0.05em;
-}
-.clock-editorial .date {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 100;
-  font-size: clamp(8px, 0.9vw, 12px);
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  margin-top: 12px;
-  writing-mode: vertical-rl;
-}
+.clock-editorial { top: 50%; left: clamp(16px,3vw,48px); transform: translateY(-50%); }
+.clock-editorial .time { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(48px,8vw,130px); color: rgba(255,255,255,.9); line-height: .9; text-shadow: 2px 4px 30px rgba(0,0,0,.6); writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: -.05em; }
+.clock-editorial .date { font-family: 'Josefin Sans', sans-serif; font-weight: 100; font-size: clamp(8px,.9vw,12px); color: rgba(255,255,255,.4); letter-spacing: .35em; text-transform: uppercase; margin-top: 12px; writing-mode: vertical-rl; }
 
-.clock-handwritten {
-  bottom: clamp(80px,12vw,140px);
-  left: clamp(16px,3vw,48px);
-}
-.clock-handwritten .time {
-  font-family: 'Caveat', cursive;
-  font-weight: 700;
-  font-size: clamp(52px, 9vw, 140px);
-  color: rgba(255,255,255,0.92);
-  line-height: 1;
-  text-shadow: 1px 2px 20px rgba(0,0,0,0.5);
-  letter-spacing: -0.02em;
-}
-.clock-handwritten .date {
-  font-family: 'Caveat', cursive;
-  font-size: clamp(14px, 1.8vw, 24px);
-  color: rgba(255,255,255,0.5);
-  margin-top: -4px;
-}
+.clock-handwritten { bottom: clamp(80px,12vw,140px); left: clamp(16px,3vw,48px); }
+.clock-handwritten .time { font-family: 'Caveat', cursive; font-weight: 700; font-size: clamp(52px,9vw,140px); color: rgba(255,255,255,.92); line-height: 1; text-shadow: 1px 2px 20px rgba(0,0,0,.5); }
+.clock-handwritten .date { font-family: 'Caveat', cursive; font-size: clamp(14px,1.8vw,24px); color: rgba(255,255,255,.5); margin-top: -4px; }
 
-.clock-brutalist {
-  top: clamp(16px,3vw,48px);
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-}
-.clock-brutalist .time {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(60px,10vw,160px);
-  color: #fff;
-  letter-spacing: 0.08em;
-  line-height: 0.85;
-  -webkit-text-stroke: 1px rgba(255,255,255,0.5);
-  text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
-}
-.clock-brutalist .date {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(12px, 1.5vw, 20px);
-  color: rgba(255,255,255,0.35);
-  letter-spacing: 0.3em;
-  margin-top: 2px;
-}
+.clock-brutalist { top: clamp(16px,3vw,48px); left: 50%; transform: translateX(-50%); text-align: center; }
+.clock-brutalist .time { font-family: 'Bebas Neue', sans-serif; font-size: clamp(60px,10vw,160px); color: #fff; letter-spacing: .08em; line-height: .85; -webkit-text-stroke: 1px rgba(255,255,255,.5); text-shadow: 4px 4px 0 rgba(0,0,0,.3); }
+.clock-brutalist .date { font-family: 'Bebas Neue', sans-serif; font-size: clamp(12px,1.5vw,20px); color: rgba(255,255,255,.35); letter-spacing: .3em; margin-top: 2px; }
 
-.clock-roman {
-  top: clamp(16px,3vw,48px);
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  white-space: nowrap;
-}
-.clock-roman .time {
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
-  font-size: clamp(32px, 5.5vw, 88px);
-  color: rgba(255,235,180,0.95);
-  letter-spacing: 0.15em;
-  text-shadow: 0 2px 20px rgba(180,130,0,0.5);
-}
-.clock-roman .date {
-  font-family: 'Cinzel', serif;
-  font-weight: 400;
-  font-size: clamp(9px, 1vw, 13px);
-  color: rgba(255,220,140,0.45);
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  margin-top: 6px;
-}
+.clock-roman { top: clamp(16px,3vw,48px); left: 50%; transform: translateX(-50%); text-align: center; white-space: nowrap; }
+.clock-roman .time { font-family: 'Cinzel', serif; font-weight: 700; font-size: clamp(32px,5.5vw,88px); color: rgba(255,235,180,.95); letter-spacing: .15em; text-shadow: 0 2px 20px rgba(180,130,0,.5); }
+.clock-roman .date { font-family: 'Cinzel', serif; font-weight: 400; font-size: clamp(9px,1vw,13px); color: rgba(255,220,140,.45); letter-spacing: .4em; margin-top: 6px; }
 
-.clock-whisper {
-  bottom: clamp(80px,12vw,140px);
-  right: clamp(16px,3vw,48px);
-  text-align: right;
-}
-.clock-whisper .time {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: clamp(44px, 7.5vw, 120px);
-  color: rgba(255,255,255,0.85);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  text-shadow: 0 2px 24px rgba(0,0,0,0.4);
-}
-.clock-whisper .date {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(11px, 1.1vw, 16px);
-  color: rgba(255,255,255,0.35);
-  letter-spacing: 0.25em;
-  margin-top: 2px;
-}
+.clock-whisper { bottom: clamp(80px,12vw,140px); right: clamp(16px,3vw,48px); text-align: right; }
+.clock-whisper .time { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300; font-size: clamp(44px,7.5vw,120px); color: rgba(255,255,255,.85); line-height: 1; letter-spacing: -.03em; text-shadow: 0 2px 24px rgba(0,0,0,.4); }
+.clock-whisper .date { font-family: 'Cormorant Garamond', serif; font-size: clamp(11px,1.1vw,16px); color: rgba(255,255,255,.35); letter-spacing: .25em; margin-top: 2px; }
 
-.clock-lcd {
-  bottom: clamp(80px,12vw,140px);
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  background: rgba(0,20,0,0.55);
-  border: 1px solid rgba(0,255,100,0.2);
-  padding: clamp(8px,1.5vw,20px) clamp(16px,3vw,40px);
-  backdrop-filter: blur(6px);
-  border-radius: 4px;
-}
-.clock-lcd .time {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(36px, 6vw, 96px);
-  color: #3f9;
-  text-shadow: 0 0 8px #3f9, 0 0 20px rgba(0,255,100,0.4);
-  letter-spacing: 0.1em;
-  line-height: 1;
-}
-.clock-lcd .date {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(10px, 1vw, 13px);
-  color: rgba(51,255,153,0.45);
-  letter-spacing: 0.3em;
-  margin-top: 4px;
-}
+.clock-lcd { bottom: clamp(80px,12vw,140px); left: 50%; transform: translateX(-50%); text-align: center; background: rgba(0,20,0,.55); border: 1px solid rgba(0,255,100,.2); padding: clamp(8px,1.5vw,20px) clamp(16px,3vw,40px); backdrop-filter: blur(6px); border-radius: 4px; }
+.clock-lcd .time { font-family: 'Share Tech Mono', monospace; font-size: clamp(36px,6vw,96px); color: #3f9; text-shadow: 0 0 8px #3f9, 0 0 20px rgba(0,255,100,.4); letter-spacing: .1em; line-height: 1; }
+.clock-lcd .date { font-family: 'Share Tech Mono', monospace; font-size: clamp(10px,1vw,13px); color: rgba(51,255,153,.45); letter-spacing: .3em; margin-top: 4px; }
 
-.clock-split {
-  top: clamp(16px,3vw,48px);
-  right: clamp(16px,3vw,48px);
-  text-align: right;
-}
-.clock-split .hours {
-  font-family: 'Righteous', cursive;
-  font-size: clamp(64px,11vw,180px);
-  color: #fff;
-  line-height: 0.85;
-  text-shadow: 3px 3px 0 rgba(0,0,0,0.25);
-  letter-spacing: -0.04em;
-}
-.clock-split .mins {
-  font-family: 'Righteous', cursive;
-  font-size: clamp(64px,11vw,180px);
-  color: transparent;
-  -webkit-text-stroke: 2px rgba(255,255,255,0.5);
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-}
-.clock-split .date {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 100;
-  font-size: clamp(9px, 0.9vw, 13px);
-  color: rgba(255,255,255,0.35);
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  margin-top: 6px;
-}
+.clock-split { top: clamp(16px,3vw,48px); right: clamp(16px,3vw,48px); text-align: right; }
+.clock-split .hours { font-family: 'Righteous', cursive; font-size: clamp(64px,11vw,180px); color: #fff; line-height: .85; text-shadow: 3px 3px 0 rgba(0,0,0,.25); letter-spacing: -.04em; }
+.clock-split .mins { font-family: 'Righteous', cursive; font-size: clamp(64px,11vw,180px); color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,.5); line-height: .85; letter-spacing: -.04em; }
+.clock-split .date { font-family: 'Josefin Sans', sans-serif; font-weight: 100; font-size: clamp(9px,.9vw,13px); color: rgba(255,255,255,.35); letter-spacing: .4em; text-transform: uppercase; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -683,63 +146,39 @@ html, body {
 <div id="loadBar"></div>
 <div id="bg"></div>
 <div id="bg2"></div>
+<canvas id="ambientCanvas"></canvas>
 <div id="moodTint"></div>
 <div class="overlay"></div>
 
-<!-- Break banner -->
 <div id="breakBanner">
-  <div class="break-msg">
-    🌿 <strong>You've been active for a while.</strong> Digital Wellbeing suggests a short break — your next wallpaper will be extra calming.
-  </div>
+  <div class="break-msg">🌿 <strong>You've been active a while.</strong> Digital Wellbeing suggests a short break — switching to calming imagery.</div>
   <button id="breakDismiss">Dismiss</button>
 </div>
 
-<!-- Wellbeing pill -->
-<div id="wbPill" title="Digital Wellbeing — click for details">
+<div id="wbPill">
   <div id="wbDot"></div>
   <span id="wbLabel">Loading</span>
   <span id="wbSessionTime">0:00</span>
 </div>
 
-<!-- Clock container -->
 <div id="clockWrap" class="hidden"></div>
 
-<!-- Wellbeing panel -->
 <div id="wbPanel">
   <div class="wb-panel-header">
     <span class="wb-panel-title">⬡ Digital Wellbeing</span>
     <button class="wb-close" id="wbPanelClose">✕</button>
   </div>
-
   <div class="wb-state-card" id="wbStateCard">
     <div class="wb-state-name" id="wbStateName">–</div>
     <div class="wb-state-desc" id="wbStateDesc">–</div>
   </div>
-
   <div class="wb-stats">
-    <div class="wb-stat">
-      <div class="wb-stat-label">Session time</div>
-      <div class="wb-stat-value" id="wbPanelTime">0:00</div>
-    </div>
-    <div class="wb-stat">
-      <div class="wb-stat-label">Wallpapers seen</div>
-      <div class="wb-stat-value" id="wbPanelCount">0</div>
-    </div>
-    <div class="wb-stat">
-      <div class="wb-stat-label">Hour of day</div>
-      <div class="wb-stat-value" id="wbPanelHour">–</div>
-    </div>
-    <div class="wb-stat">
-      <div class="wb-stat-label">Interaction rate</div>
-      <div class="wb-stat-value" id="wbPanelRate">–</div>
-      <div class="wb-rate-bars" id="wbRateBars"></div>
-    </div>
+    <div class="wb-stat"><div class="wb-stat-label">Session time</div><div class="wb-stat-value" id="wbPanelTime">0:00</div></div>
+    <div class="wb-stat"><div class="wb-stat-label">Wallpapers seen</div><div class="wb-stat-value" id="wbPanelCount">0</div></div>
+    <div class="wb-stat"><div class="wb-stat-label">Hour of day</div><div class="wb-stat-value" id="wbPanelHour">–</div></div>
+    <div class="wb-stat"><div class="wb-stat-label">Interaction rate</div><div class="wb-stat-value" id="wbPanelRate">–</div><div class="wb-rate-bars" id="wbRateBars"></div></div>
   </div>
-
-  <div style="margin-bottom:12px;">
-    <div class="wb-stat-label" style="margin-bottom:10px;">Override mood</div>
-    <div class="wb-mood-row" id="wbMoodRow"></div>
-  </div>
+  <div><div class="wb-stat-label" style="margin-bottom:10px;">Override mood</div><div class="wb-mood-row" id="wbMoodRow"></div></div>
 </div>
 
 <div class="ui">
@@ -761,503 +200,620 @@ html, body {
 
 <script>
 // ══════════════════════════════════════════════════════════════
-//  DIGITAL WELLBEING ENGINE
-//  Tracks: session time · interaction rate · time-of-day
-//  Outputs: mood state → curated image pool + tint color
+//  WELLBEING ENGINE
 // ══════════════════════════════════════════════════════════════
-
 const WELLBEING_STATES = {
   calm: {
-    name: 'Calm',
-    desc: 'Morning energy, gentle start. Soft landscapes and serene nature fill your screen.',
-    color: '#5ba4cf',
-    tint: 'rgba(91,164,207,0.08)',
-    barColor: '#5ba4cf',
-    icon: '🌅',
-    // Picsum IDs that tend to be soft/nature scenes
-    pool: [10,15,24,25,37,43,57,63,68,75,82,96,103,110,119,145,160,172,180,190,203,215,230,244,258,271,285,300]
+    name:'Calm', icon:'🌅',
+    desc:'Morning energy, gentle start. Soft landscapes and serene nature.',
+    color:'#6ab8e8', rgb:[106,184,232], tint:'rgba(91,164,207,0.07)',
+    pool:[10,15,24,25,37,43,57,63,68,75,82,96,103,110,119,145,160,172,180,190,203,215,230,244,258,271,285,300],
+    ambient:{ count:18, speed:0.4, color:[160,210,255], shape:'orb', sineX:true, opacity:0.32, lifeMin:200, lifeMax:380 }
   },
   focused: {
-    name: 'Focused',
-    desc: 'Peak productivity hours. Clean architecture and minimal textures sharpen attention.',
-    color: '#e8c87a',
-    tint: 'rgba(232,200,122,0.06)',
-    barColor: '#e8c87a',
-    icon: '🎯',
-    pool: [13,21,30,48,55,65,91,115,120,135,148,156,170,185,195,208,220,235,248,262,276,290,305,318]
+    name:'Focused', icon:'🎯',
+    desc:'Peak productivity hours. Architecture and minimal textures sharpen attention.',
+    color:'#e8c87a', rgb:[232,200,122], tint:'rgba(232,200,122,0.06)',
+    pool:[13,21,30,48,55,65,91,115,120,135,148,156,170,185,195,208,220,235,248,262,276,290,305,318],
+    ambient:{ count:12, speed:0.7, color:[255,218,100], shape:'diamond', sineX:false, opacity:0.38, lifeMin:140, lifeMax:260 }
   },
   energized: {
-    name: 'Energized',
-    desc: 'High activity detected. Vivid colors and dynamic scenes match your momentum.',
-    color: '#f0623a',
-    tint: 'rgba(240,98,58,0.07)',
-    barColor: '#f0623a',
-    icon: '⚡',
-    pool: [20,29,42,64,74,84,100,118,142,166,200,210,225,240,256,268,282,295,310,324,336,348,360,372]
+    name:'Energized', icon:'⚡',
+    desc:'High activity detected. Vivid colors and dynamic scenes match your momentum.',
+    color:'#f0623a', rgb:[240,98,58], tint:'rgba(240,98,58,0.07)',
+    pool:[20,29,42,64,74,84,100,118,142,166,200,210,225,240,256,268,282,295,310,324,336,348,360,372],
+    ambient:{ count:30, speed:2.8, color:[255,110,55], shape:'spark', sineX:false, opacity:0.48, lifeMin:28, lifeMax:72 }
   },
   windDown: {
-    name: 'Wind Down',
-    desc: 'Evening hours settling in. Warm tones and twilight scenes ease the transition.',
-    color: '#c47d54',
-    tint: 'rgba(196,125,84,0.1)',
-    barColor: '#c47d54',
-    icon: '🌇',
-    pool: [11,26,36,50,67,76,88,102,113,128,140,153,165,178,192,205,218,232,246,260,273,288,302,315]
+    name:'Wind Down', icon:'🌇',
+    desc:'Evening hours. Warm tones and twilight scenes ease the transition.',
+    color:'#d4845a', rgb:[212,132,90], tint:'rgba(196,125,84,0.09)',
+    pool:[11,26,36,50,67,76,88,102,113,128,140,153,165,178,192,205,218,232,246,260,273,288,302,315],
+    ambient:{ count:16, speed:0.3, color:[255,175,90], shape:'ember', sineX:false, opacity:0.36, lifeMin:220, lifeMax:420 }
   },
   restore: {
-    name: 'Restore',
-    desc: 'Extended screen time. Restorative greens and natural scenes help reset your focus.',
-    color: '#5cbf7e',
-    tint: 'rgba(92,191,126,0.09)',
-    barColor: '#5cbf7e',
-    icon: '🌿',
-    pool: [14,22,33,44,56,69,80,93,105,116,127,139,150,163,177,189,201,214,228,242,255,269,283,297]
+    name:'Restore', icon:'🌿',
+    desc:'Extended screen time. Natural greens and restorative scenes reset your focus.',
+    color:'#5cbf7e', rgb:[92,191,126], tint:'rgba(92,191,126,0.08)',
+    pool:[14,22,33,44,56,69,80,93,105,116,127,139,150,163,177,189,201,214,228,242,255,269,283,297],
+    ambient:{ count:22, speed:0.28, color:[100,210,150], shape:'mote', sineX:true, opacity:0.30, lifeMin:280, lifeMax:480 }
   }
 };
 
-// ── STATE ──
 const session = {
   startTime: Date.now(),
   totalInteractions: 0,
-  recentInteractions: [],   // timestamps for rate calculation
+  recentInteractions: [],
   currentState: 'calm',
   manualOverride: null,
   imgCount: 0,
-  rateHistory: [],          // rate per minute samples
+  rateHistory: Array(8).fill(0),
 };
 
-let imgPool = [];
-let clockPool = [];
-let activeClockStyle = null;
-let clockTimer = null;
-let currentBg = 'bg';
-let analCanvas = null, analCtx = null;
-let panelOpen = false;
-let breakShown = false;
-const BREAK_THRESHOLD_MS = 25 * 60 * 1000; // 25 minutes
+let imgPool=[], clockPool=[], activeClockStyle=null, clockTimer=null;
+let currentBg='bg', analCanvas=null, analCtx=null, sundialCanvas=null, sundialCtx=null;
+let panelOpen=false, breakShown=false;
+const BREAK_MS = 25*60*1000;
 
-// ── WELLBEING CALCULATION ──
-function getTimeOfDayState() {
+// Smoothly interpolated mood color used by sundial & ambient
+let moodColor = { r:106, g:184, b:232 };
+let moodTarget = { r:106, g:184, b:232 };
+
+// ── WELLBEING LOGIC ──
+function getTimeState() {
   const h = new Date().getHours();
-  if (h >= 5  && h < 10)  return 'calm';
-  if (h >= 10 && h < 14)  return 'focused';
-  if (h >= 14 && h < 18)  return 'energized';
-  if (h >= 18 && h < 22)  return 'windDown';
-  return 'restore'; // late night
+  if(h>=5&&h<10) return 'calm';
+  if(h>=10&&h<14) return 'focused';
+  if(h>=14&&h<18) return 'energized';
+  if(h>=18&&h<22) return 'windDown';
+  return 'restore';
 }
-
-function getInteractionRate() {
-  const now = Date.now();
-  const window2min = session.recentInteractions.filter(t => now - t < 2 * 60 * 1000);
-  return window2min.length; // interactions in last 2 mins
+function getRate() {
+  const now=Date.now();
+  return session.recentInteractions.filter(t=>now-t<120000).length;
 }
-
 function recordInteraction() {
-  const now = Date.now();
+  const now=Date.now();
   session.totalInteractions++;
   session.recentInteractions.push(now);
-  // keep last 20 minutes only
-  session.recentInteractions = session.recentInteractions.filter(t => now - t < 20 * 60 * 1000);
-
-  // Sample rate history (for bar chart)
-  session.rateHistory.push(getInteractionRate());
-  if (session.rateHistory.length > 8) session.rateHistory.shift();
+  session.recentInteractions=session.recentInteractions.filter(t=>now-t<1200000);
+  session.rateHistory.push(getRate());
+  if(session.rateHistory.length>8) session.rateHistory.shift();
 }
-
-function computeWellbeingState() {
-  if (session.manualOverride) return session.manualOverride;
-
-  const sessionMinutes = (Date.now() - session.startTime) / 60000;
-  const rate = getInteractionRate();
-
-  // Long session → restore
-  if (sessionMinutes > 20) return 'restore';
-
-  // High interaction rate → energized
-  if (rate >= 5) return 'energized';
-
-  // Medium rate → focused
-  if (rate >= 2) return 'focused';
-
-  // Fall back to time-of-day
-  return getTimeOfDayState();
+function computeState() {
+  if(session.manualOverride) return session.manualOverride;
+  const mins=(Date.now()-session.startTime)/60000;
+  const rate=getRate();
+  if(mins>20) return 'restore';
+  if(rate>=5) return 'energized';
+  if(rate>=2) return 'focused';
+  return getTimeState();
 }
 
 function updateWellbeingUI() {
-  const state = computeWellbeingState();
-  session.currentState = state;
-  const cfg = WELLBEING_STATES[state];
-  const sessionSecs = Math.floor((Date.now() - session.startTime) / 1000);
-  const mins = Math.floor(sessionSecs / 60);
-  const secs = sessionSecs % 60;
-  const timeStr = `${mins}:${String(secs).padStart(2,'0')}`;
-  const rate = getInteractionRate();
+  const state=computeState();
+  session.currentState=state;
+  const cfg=WELLBEING_STATES[state];
+  moodTarget={ r:cfg.rgb[0], g:cfg.rgb[1], b:cfg.rgb[2] };
+  ambSetState(state);
 
-  // Pill
-  const dot = document.getElementById('wbDot');
-  dot.style.background = cfg.color;
-  dot.style.boxShadow = `0 0 6px ${cfg.color}`;
-  document.getElementById('wbLabel').textContent = cfg.name;
-  document.getElementById('wbSessionTime').textContent = timeStr;
+  const elapsed=Math.floor((Date.now()-session.startTime)/1000);
+  const mins=Math.floor(elapsed/60), secs=elapsed%60;
+  const tStr=`${mins}:${String(secs).padStart(2,'0')}`;
+  const rate=getRate();
 
-  // Load bar color
-  document.getElementById('loadBar').style.background = cfg.color;
+  document.getElementById('wbDot').style.background=cfg.color;
+  document.getElementById('wbDot').style.boxShadow=`0 0 8px ${cfg.color}`;
+  document.getElementById('wbLabel').textContent=cfg.name;
+  document.getElementById('wbSessionTime').textContent=tStr;
+  document.getElementById('loadBar').style.background=cfg.color;
+  document.getElementById('moodTint').style.background=cfg.tint;
 
-  // Mood tint
-  document.getElementById('moodTint').style.background = cfg.tint;
+  document.getElementById('wbPanelTime').textContent=tStr;
+  document.getElementById('wbPanelCount').textContent=session.imgCount;
+  document.getElementById('wbPanelHour').textContent=`${new Date().getHours()}h`;
+  document.getElementById('wbPanelRate').textContent=`${rate}/2m`;
+  const card=document.getElementById('wbStateCard');
+  card.style.background=`${cfg.color}18`;
+  card.style.borderTopColor=`${cfg.color}66`;
+  document.getElementById('wbStateName').textContent=`${cfg.icon}  ${cfg.name}`;
+  document.getElementById('wbStateDesc').textContent=cfg.desc;
+  const maxR=Math.max(...session.rateHistory,1);
+  document.getElementById('wbRateBars').innerHTML=session.rateHistory.map(v=>
+    `<div class="wb-rate-bar" style="height:${Math.max(8,(v/maxR)*100)}%;background:${cfg.color}99;"></div>`).join('');
 
-  // Panel updates
-  document.getElementById('wbPanelTime').textContent = timeStr;
-  document.getElementById('wbPanelCount').textContent = session.imgCount;
-  document.getElementById('wbPanelHour').textContent = `${new Date().getHours()}h`;
-  document.getElementById('wbPanelRate').textContent = `${rate}/2m`;
-
-  const stateCard = document.getElementById('wbStateCard');
-  stateCard.style.background = `${cfg.color}18`;
-  stateCard.style.borderTop = `2px solid ${cfg.color}55`;
-  document.getElementById('wbStateName').textContent = `${cfg.icon} ${cfg.name}`;
-  document.getElementById('wbStateDesc').textContent = cfg.desc;
-
-  // Rate bar chart
-  const barsEl = document.getElementById('wbRateBars');
-  const maxRate = Math.max(...session.rateHistory, 1);
-  barsEl.innerHTML = session.rateHistory.map(v => {
-    const pct = Math.max(8, (v / maxRate) * 100);
-    return `<div class="wb-rate-bar" style="height:${pct}%;background:${cfg.color}88;"></div>`;
-  }).join('');
-
-  // Active mood button
-  document.querySelectorAll('.wb-mood-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.state === state);
-    if (btn.dataset.state === state) {
-      btn.style.background = `${WELLBEING_STATES[state].color}20`;
-      btn.style.borderColor = `${WELLBEING_STATES[state].color}60`;
-      btn.style.color = '#fff';
-    } else {
-      btn.style.background = '';
-      btn.style.borderColor = '';
-      btn.style.color = '';
-    }
+  document.querySelectorAll('.wb-mood-btn').forEach(btn=>{
+    const act=btn.dataset.state===state;
+    const bc=WELLBEING_STATES[btn.dataset.state].color;
+    btn.style.background=act?`${bc}28`:'';
+    btn.style.borderColor=act?`${bc}70`:'';
+    btn.style.color=act?'#fff':'';
   });
 
-  // Break check
-  if (!breakShown && (Date.now() - session.startTime) > BREAK_THRESHOLD_MS) {
-    breakShown = true;
+  if(!breakShown&&(Date.now()-session.startTime)>BREAK_MS){
+    breakShown=true;
     document.getElementById('breakBanner').classList.add('show');
-    // Force restore state after break shown
-    if (!session.manualOverride) session.manualOverride = 'restore';
-    setTimeout(() => updateWellbeingUI(), 100);
+    if(!session.manualOverride) session.manualOverride='restore';
+    setTimeout(updateWellbeingUI,100);
   }
 }
 
-// Build mood buttons
 function buildMoodButtons() {
-  const row = document.getElementById('wbMoodRow');
-  Object.entries(WELLBEING_STATES).forEach(([key, cfg]) => {
-    const btn = document.createElement('button');
-    btn.className = 'wb-mood-btn';
-    btn.dataset.state = key;
-    btn.innerHTML = `<span class="mood-icon">${cfg.icon}</span>${cfg.name}`;
-    btn.title = `Override to ${cfg.name}`;
-    btn.addEventListener('click', () => {
-      if (session.manualOverride === key) {
-        session.manualOverride = null; // toggle off
-      } else {
-        session.manualOverride = key;
-      }
-      updateWellbeingUI();
-    });
+  const row=document.getElementById('wbMoodRow');
+  Object.entries(WELLBEING_STATES).forEach(([key,cfg])=>{
+    const btn=document.createElement('button');
+    btn.className='wb-mood-btn'; btn.dataset.state=key;
+    btn.innerHTML=`<span class="mood-icon">${cfg.icon}</span>${cfg.name}`;
+    btn.addEventListener('click',()=>{ session.manualOverride=session.manualOverride===key?null:key; updateWellbeingUI(); });
     row.appendChild(btn);
   });
 }
 
-// ── POOL MANAGEMENT ──
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+// ══════════════════════════════════════════════════════════════
+//  AMBIENT PARTICLE SYSTEM
+// ══════════════════════════════════════════════════════════════
+const ambCanvas=document.getElementById('ambientCanvas');
+const ambCtx=ambCanvas.getContext('2d');
+let particles=[];
+let ambCfg=WELLBEING_STATES.calm.ambient;
+
+function resizeAmb() { ambCanvas.width=window.innerWidth; ambCanvas.height=window.innerHeight; }
+resizeAmb();
+window.addEventListener('resize',resizeAmb);
+
+function ambSetState(state) { ambCfg=WELLBEING_STATES[state].ambient; }
+
+function spawnParticle() {
+  const W=ambCanvas.width, H=ambCanvas.height, cfg=ambCfg;
+  const [r,g,b]=cfg.color;
+  const life=cfg.lifeMin+Math.random()*(cfg.lifeMax-cfg.lifeMin);
+  let vx,vy;
+  if(cfg.shape==='spark'){
+    const a=Math.random()*Math.PI*2, spd=(0.5+Math.random())*cfg.speed;
+    vx=Math.cos(a)*spd; vy=Math.sin(a)*spd;
+  } else {
+    vx=(Math.random()-.5)*cfg.speed*.8;
+    vy=-(0.3+Math.random()*.7)*cfg.speed;
   }
-  return arr;
+  return {
+    x:Math.random()*W,
+    y:cfg.shape==='spark'?H*(0.3+Math.random()*.5):H+10,
+    vx,vy,size:2+Math.random()*4,
+    life,maxLife:life,r,g,b,
+    shape:cfg.shape,
+    sinePhase:Math.random()*Math.PI*2,
+    sineAmp:(15+Math.random()*25)*(cfg.sineX?1:0),
+    flicker:Math.random()*Math.PI*2,
+  };
 }
 
-function buildImgPool() {
-  const state = computeWellbeingState();
-  const moodPool = [...WELLBEING_STATES[state].pool];
-  // Blend with some random IDs for variety
-  const randoms = Array.from({length: 12}, () => Math.floor(Math.random() * 990) + 10);
-  imgPool = shuffle([...moodPool, ...randoms]);
-}
-
-function buildClockPool() {
-  clockPool = shuffle([
-    'minimal-digital','analog','neon','editorial',
-    'handwritten','brutalist','roman','whisper','lcd','split'
-  ]);
-}
-
-function nextClockStyle() {
-  if (clockPool.length === 0) buildClockPool();
-  let style = clockPool.shift();
-  if (style === activeClockStyle && clockPool.length > 0) {
-    clockPool.push(style);
-    style = clockPool.shift();
+function drawParticle(p) {
+  const prog=p.life/p.maxLife;
+  const oFactor=prog<0.1?prog/0.1:prog>0.8?(1-prog)/0.2:1;
+  const alpha=oFactor*ambCfg.opacity;
+  const {r,g,b}=p;
+  ambCtx.save();
+  ambCtx.globalAlpha=alpha;
+  if(p.shape==='orb'){
+    const gr=ambCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*2.5);
+    gr.addColorStop(0,`rgba(${r},${g},${b},1)`);
+    gr.addColorStop(0.4,`rgba(${r},${g},${b},0.5)`);
+    gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ambCtx.beginPath(); ambCtx.arc(p.x,p.y,p.size*2.5,0,Math.PI*2);
+    ambCtx.fillStyle=gr; ambCtx.fill();
+  } else if(p.shape==='diamond'){
+    const s=p.size*1.4;
+    ambCtx.beginPath();
+    ambCtx.moveTo(p.x,p.y-s); ambCtx.lineTo(p.x+s*.6,p.y);
+    ambCtx.lineTo(p.x,p.y+s); ambCtx.lineTo(p.x-s*.6,p.y);
+    ambCtx.closePath();
+    ambCtx.fillStyle=`rgba(${r},${g},${b},0.8)`; ambCtx.fill();
+  } else if(p.shape==='spark'){
+    const spd=Math.sqrt(p.vx*p.vx+p.vy*p.vy)||1;
+    const tl=Math.min(spd*5,22), nx=p.vx/spd, ny=p.vy/spd;
+    const gr=ambCtx.createLinearGradient(p.x-nx*tl,p.y-ny*tl,p.x,p.y);
+    gr.addColorStop(0,`rgba(${r},${g},${b},0)`);
+    gr.addColorStop(1,`rgba(${r},${g},${b},1)`);
+    ambCtx.beginPath(); ambCtx.moveTo(p.x-nx*tl,p.y-ny*tl); ambCtx.lineTo(p.x,p.y);
+    ambCtx.strokeStyle=gr; ambCtx.lineWidth=1.5; ambCtx.lineCap='round'; ambCtx.stroke();
+    ambCtx.beginPath(); ambCtx.arc(p.x,p.y,2,0,Math.PI*2);
+    ambCtx.fillStyle='rgba(255,220,200,0.9)'; ambCtx.fill();
+  } else if(p.shape==='ember'){
+    const fl=0.7+0.3*Math.sin(p.flicker);
+    const gr=ambCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*2.2);
+    gr.addColorStop(0,`rgba(255,240,200,${fl})`);
+    gr.addColorStop(0.4,`rgba(${r},${g},${b},${fl*.7})`);
+    gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ambCtx.beginPath(); ambCtx.arc(p.x,p.y,p.size*2.2,0,Math.PI*2);
+    ambCtx.fillStyle=gr; ambCtx.fill();
+  } else if(p.shape==='mote'){
+    const s=p.size;
+    const gr=ambCtx.createRadialGradient(p.x,p.y-s*.3,0,p.x,p.y,s*2);
+    gr.addColorStop(0,`rgba(${r},${g},${b},0.9)`);
+    gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ambCtx.beginPath(); ambCtx.ellipse(p.x,p.y,s*.7,s*1.3,0,0,Math.PI*2);
+    ambCtx.fillStyle=gr; ambCtx.fill();
   }
-  activeClockStyle = style;
-  return style;
+  ambCtx.restore();
 }
 
-// ── LOADING BAR ──
-const loadBar = document.getElementById('loadBar');
-function barStart() { loadBar.style.width = '55%'; loadBar.style.opacity = '1'; }
-function barDone()  {
-  loadBar.style.width = '100%';
-  setTimeout(() => { loadBar.style.opacity = '0'; loadBar.style.width = '0'; }, 350);
+function ambientLoop() {
+  ambCtx.clearRect(0,0,ambCanvas.width,ambCanvas.height);
+  const W=ambCanvas.width, H=ambCanvas.height, cfg=ambCfg;
+  // Spawn
+  if(particles.length<cfg.count&&Math.random()<(cfg.shape==='spark'?0.7:0.25))
+    particles.push(spawnParticle());
+  // Update & draw
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    if(p.sineAmp>0){ p.x+=Math.sin(p.sinePhase)*0.4; p.sinePhase+=0.02; }
+    p.x+=p.vx; p.y+=p.vy; p.life--; p.flicker+=0.12+Math.random()*.08;
+    if(p.shape==='ember') p.vy-=0.003;
+    if(p.life<=0||p.y<-30||p.x<-50||p.x>W+50||p.y>H+50){ particles.splice(i,1); }
+    else drawParticle(p);
+  }
+  // Lerp mood color
+  moodColor.r+=(moodTarget.r-moodColor.r)*0.015;
+  moodColor.g+=(moodTarget.g-moodColor.g)*0.015;
+  moodColor.b+=(moodTarget.b-moodColor.b)*0.015;
+  requestAnimationFrame(ambientLoop);
 }
+
+// ══════════════════════════════════════════════════════════════
+//  SUNDIAL CLOCK
+//  Shadow angle reacts to: current time + mood color (from wallpaper)
+// ══════════════════════════════════════════════════════════════
+const ROMAN_H_MAP = {6:'VI', 9:'IX', 12:'XII', 15:'XV', 18:'XVIII'};
+
+function renderSundial() {
+  if(!sundialCtx||!sundialCanvas) return;
+  const ctx=sundialCtx, cvs=sundialCanvas;
+  const W=cvs.width, H=cvs.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx=W/2, cy=H*0.78, R=W*0.42, gnomH=R*0.52;
+
+  const now=new Date();
+  const totalH=now.getHours()+now.getMinutes()/60+now.getSeconds()/3600;
+  const clampH=Math.max(6,Math.min(18,totalH));
+  const prog=(clampH-6)/12;
+
+  // sunAngle: clockwise from PI (left) to 2PI=0 (right), through 3PI/2 (top)
+  // formula: PI + prog*PI  ← travels correctly through upper semicircle
+  const sunAngle=Math.PI+prog*Math.PI;
+  const shadowAngle=sunAngle-Math.PI; // opposite = lower arc direction
+
+  const mc=moodColor;
+  const mR=Math.round(mc.r), mG=Math.round(mc.g), mB=Math.round(mc.b);
+  const mood=(a)=>`rgba(${mR},${mG},${mB},${a})`;
+  const moodSolid=`rgb(${mR},${mG},${mB})`;
+
+  // ── Sky arc fill (sun-swept sector) ──
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.arc(cx,cy,R*.9,Math.PI,sunAngle,false); // clockwise from left to current sun pos
+  ctx.closePath();
+  const skyG=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  skyG.addColorStop(0,mood(0.14));
+  skyG.addColorStop(0.7,mood(0.07));
+  skyG.addColorStop(1,mood(0));
+  ctx.fillStyle=skyG; ctx.fill();
+  ctx.restore();
+
+  // ── Stone base plate ──
+  ctx.save();
+  const bW=R*1.1, bH=H*0.22;
+  const stG=ctx.createLinearGradient(cx,cy,cx,cy+bH);
+  stG.addColorStop(0,'rgba(190,180,165,0.55)');
+  stG.addColorStop(1,'rgba(100,90,80,0.2)');
+  ctx.beginPath();
+  ctx.moveTo(cx-bW*.48,cy); ctx.lineTo(cx+bW*.48,cy);
+  ctx.lineTo(cx+bW*.36,cy+bH); ctx.lineTo(cx-bW*.36,cy+bH);
+  ctx.closePath(); ctx.fillStyle=stG; ctx.fill();
+  // stone edge line
+  ctx.beginPath(); ctx.moveTo(cx-bW*.48,cy); ctx.lineTo(cx+bW*.48,cy);
+  ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
+
+  // ── Outer arc (dial ring + glow) ──
+  ctx.save();
+  // outer glow ring
+  ctx.beginPath(); ctx.arc(cx,cy,R,Math.PI,0,false);
+  ctx.strokeStyle=mood(0.22); ctx.lineWidth=7; ctx.stroke();
+  // main ring
+  ctx.beginPath(); ctx.arc(cx,cy,R,Math.PI,0,false);
+  ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.lineWidth=1.5; ctx.stroke();
+  // inner guide arc
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.72,Math.PI,0,false);
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
+
+  // ── Hour markers + Roman labels ──
+  ctx.save();
+  for(let h=6;h<=18;h++){
+    const p2=(h-6)/12;
+    const a=Math.PI+p2*Math.PI;
+    const isMaj=h%3===0;
+    const ro=R, ri=isMaj?R-15:R-7;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*ri,cy+Math.sin(a)*ri);
+    ctx.lineTo(cx+Math.cos(a)*ro,cy+Math.sin(a)*ro);
+    ctx.strokeStyle=isMaj?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.3)';
+    ctx.lineWidth=isMaj?2:1; ctx.stroke();
+    if(ROMAN_H_MAP[h]){
+      const lr=R-30;
+      ctx.font=`${h===12?'11px':'9px'} 'Cinzel', serif`;
+      ctx.fillStyle=h===12?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.45)';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(ROMAN_H_MAP[h],cx+Math.cos(a)*lr,cy+Math.sin(a)*lr);
+    }
+  }
+  ctx.restore();
+
+  // ── Shadow line ──
+  const sLen=R*0.73;
+  const sx=cx+Math.cos(shadowAngle)*sLen, sy=cy+Math.sin(shadowAngle)*sLen;
+  ctx.save();
+  // glow halo
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(sx,sy);
+  ctx.strokeStyle=mood(0.2); ctx.lineWidth=9; ctx.lineCap='round'; ctx.stroke();
+  // gradient shadow ray
+  const shG=ctx.createLinearGradient(cx,cy,sx,sy);
+  shG.addColorStop(0,mood(0.95));
+  shG.addColorStop(0.55,mood(0.65));
+  shG.addColorStop(1,mood(0.08));
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(sx,sy);
+  ctx.strokeStyle=shG; ctx.lineWidth=2.8; ctx.lineCap='round'; ctx.stroke();
+  ctx.restore();
+
+  // ── Gnomon (vertical fin) ──
+  ctx.save();
+  const gnG=ctx.createLinearGradient(cx,cy,cx,cy-gnomH);
+  gnG.addColorStop(0,'rgba(255,255,255,0.9)');
+  gnG.addColorStop(1,'rgba(255,255,255,0.05)');
+  ctx.beginPath();
+  ctx.moveTo(cx-3.5,cy); ctx.lineTo(cx+3.5,cy); ctx.lineTo(cx,cy-gnomH);
+  ctx.closePath(); ctx.fillStyle=gnG; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=0.5; ctx.stroke();
+  ctx.restore();
+
+  // ── Sun disc on arc ──
+  const sunX=cx+Math.cos(sunAngle)*R, sunY=cy+Math.sin(sunAngle)*R;
+  if(sunY<=cy+4){
+    ctx.save();
+    // outer halo
+    const halo=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,20);
+    halo.addColorStop(0,mood(0.55)); halo.addColorStop(0.4,mood(0.22)); halo.addColorStop(1,mood(0));
+    ctx.beginPath(); ctx.arc(sunX,sunY,20,0,Math.PI*2); ctx.fillStyle=halo; ctx.fill();
+    // sun body
+    ctx.beginPath(); ctx.arc(sunX,sunY,6,0,Math.PI*2); ctx.fillStyle=mood(0.9); ctx.fill();
+    ctx.beginPath(); ctx.arc(sunX,sunY,3.2,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Sun ray lines (decorative, emanate from sun position) ──
+  if(sunY<=cy+4){
+    ctx.save();
+    ctx.globalAlpha=0.18;
+    const rayCount=8;
+    for(let i=0;i<rayCount;i++){
+      const ra=(i/rayCount)*Math.PI*2;
+      const r1=9, r2=16+Math.sin(ra*3)*4;
+      ctx.beginPath();
+      ctx.moveTo(sunX+Math.cos(ra)*r1,sunY+Math.sin(ra)*r1);
+      ctx.lineTo(sunX+Math.cos(ra)*r2,sunY+Math.sin(ra)*r2);
+      ctx.strokeStyle=moodSolid; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ── Center pivot ──
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,5.5,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,2.8,0,Math.PI*2);
+  ctx.fillStyle=moodSolid; ctx.fill();
+  ctx.restore();
+
+  // ── Time & date text below dial ──
+  ctx.save();
+  const h12=now.getHours()%12||12;
+  const mm=String(now.getMinutes()).padStart(2,'0');
+  const ampm=now.getHours()>=12?'PM':'AM';
+  ctx.shadowColor=mood(0.45); ctx.shadowBlur=14;
+  ctx.font=`300 ${Math.round(W*.096)}px 'Cormorant Garamond', serif`;
+  ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText(`${h12}:${mm} ${ampm}`,cx,cy+H*.058);
+  ctx.shadowBlur=0;
+  ctx.font=`100 ${Math.round(W*.043)}px 'Josefin Sans', sans-serif`;
+  ctx.fillStyle='rgba(255,255,255,0.32)'; ctx.textAlign='center';
+  ctx.fillText(`${DAYS[now.getDay()].toUpperCase()} · ${MONTHS[now.getMonth()].slice(0,3).toUpperCase()} ${now.getDate()}`,cx,cy+H*.16);
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  POOL MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function buildImgPool(){
+  const state=computeState();
+  const mp=[...WELLBEING_STATES[state].pool];
+  const rnd=Array.from({length:12},()=>Math.floor(Math.random()*990)+10);
+  imgPool=shuffle([...mp,...rnd]);
+}
+function buildClockPool(){
+  // 'neon' removed — 'sundial' added
+  clockPool=shuffle(['minimal-digital','analog','sundial','editorial','handwritten','brutalist','roman','whisper','lcd','split']);
+}
+function nextClockStyle(){
+  if(clockPool.length===0) buildClockPool();
+  let s=clockPool.shift();
+  if(s===activeClockStyle&&clockPool.length>0){ clockPool.push(s); s=clockPool.shift(); }
+  activeClockStyle=s; return s;
+}
+
+// ── LOAD BAR ──
+const loadBar=document.getElementById('loadBar');
+function barStart(){ loadBar.style.width='55%'; loadBar.style.opacity='1'; }
+function barDone(){ loadBar.style.width='100%'; setTimeout(()=>{ loadBar.style.opacity='0'; loadBar.style.width='0'; },350); }
 
 // ── TIME HELPERS ──
-function pad(n) { return String(n).padStart(2,'0'); }
-function timeStr(d, ampm) {
-  let h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
-  if (ampm) {
-    const suf = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${pad(h)}:${pad(m)}:${pad(s)} ${suf}`;
-  }
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
-}
-function hhmm(d) { return `${pad(d.getHours()%12||12)}:${pad(d.getMinutes())}`; }
-const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-function dateStr(d) { return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`; }
-function shortDate(d) { return `${MONTHS[d.getMonth()].slice(0,3).toUpperCase()} ${d.getDate()} · ${d.getFullYear()}`; }
-function toRoman(n) {
-  const vals=[1000,900,500,400,100,90,50,40,10,9,5,4,1];
-  const syms=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
-  let out='';
-  vals.forEach((v,i)=>{ while(n>=v){ out+=syms[i]; n-=v; } });
-  return out;
-}
+function pad(n){ return String(n).padStart(2,'0'); }
+function timeStr(d,ampm){ let h=d.getHours(),m=d.getMinutes(),s=d.getSeconds(); if(ampm){const sf=h>=12?'PM':'AM';h=h%12||12;return `${pad(h)}:${pad(m)}:${pad(s)} ${sf}`;} return `${pad(h)}:${pad(m)}:${pad(s)}`; }
+function hhmm(d){ return `${pad(d.getHours()%12||12)}:${pad(d.getMinutes())}`; }
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function dateStr(d){ return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`; }
+function shortDate(d){ return `${MONTHS[d.getMonth()].slice(0,3).toUpperCase()} ${d.getDate()} · ${d.getFullYear()}`; }
+function toRoman(n){ const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1],s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];let o='';v.forEach((x,i)=>{while(n>=x){o+=s[i];n-=x;}});return o; }
 
-// ── ANALOG CLOCK ──
-function renderAnalog() {
-  if (!analCtx || !analCanvas) return;
-  const size = analCanvas.width;
-  const cx = size/2, cy = size/2, r = size/2 - 4;
-  const d = new Date();
-  const h = d.getHours()%12, m = d.getMinutes(), s = d.getSeconds();
-  const ctx = analCtx;
-  ctx.clearRect(0,0,size,size);
-  ctx.beginPath();
-  ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  for (let i=0; i<12; i++) {
-    const a = (i/12)*Math.PI*2 - Math.PI/2;
-    const len = i%3===0 ? r*0.12 : r*0.06;
-    ctx.beginPath();
-    ctx.moveTo(cx+Math.cos(a)*(r-len), cy+Math.sin(a)*(r-len));
-    ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
-    ctx.strokeStyle = i%3===0 ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = i%3===0 ? 2 : 1;
-    ctx.stroke();
+// ── ANALOG ──
+function renderAnalog(){
+  if(!analCtx||!analCanvas) return;
+  const s=analCanvas.width, cx=s/2, cy=s/2, r=s/2-4;
+  const d=new Date(), h=d.getHours()%12, m=d.getMinutes(), sec=d.getSeconds();
+  const ctx=analCtx; ctx.clearRect(0,0,s,s);
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1.5; ctx.stroke();
+  for(let i=0;i<12;i++){
+    const a=(i/12)*Math.PI*2-Math.PI/2, len=i%3===0?r*.12:r*.06;
+    ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*(r-len),cy+Math.sin(a)*(r-len)); ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+    ctx.strokeStyle=i%3===0?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.35)'; ctx.lineWidth=i%3===0?2:1; ctx.stroke();
   }
-  function hand(angle, len, width, color) {
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+Math.cos(angle)*len, cy+Math.sin(angle)*len);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  }
-  hand(((h+m/60)/12)*Math.PI*2-Math.PI/2, r*0.52, 4, 'rgba(255,255,255,0.95)');
-  hand(((m+s/60)/60)*Math.PI*2-Math.PI/2, r*0.72, 2.5, 'rgba(255,255,255,0.9)');
-  hand((s/60)*Math.PI*2-Math.PI/2, r*0.78, 1.5, '#f85');
-  ctx.beginPath();
-  ctx.arc(cx,cy,4,0,Math.PI*2);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
+  function hand(angle,len,w,col){ ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(angle)*len,cy+Math.sin(angle)*len);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.stroke(); }
+  hand(((h+m/60)/12)*Math.PI*2-Math.PI/2,r*.52,4,'rgba(255,255,255,0.95)');
+  hand(((m+sec/60)/60)*Math.PI*2-Math.PI/2,r*.72,2.5,'rgba(255,255,255,0.9)');
+  hand((sec/60)*Math.PI*2-Math.PI/2,r*.78,1.5,'#f85');
+  ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
 }
 
 // ── CLOCK BUILDERS ──
 const CLOCK_BUILDERS = {
-  'minimal-digital': (wrap) => {
-    wrap.className = 'clock-minimal-digital';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=timeStr(d,true); document.getElementById('cd').textContent=dateStr(d).toUpperCase(); };
+  'minimal-digital':(wrap)=>{
+    wrap.className='clock-minimal-digital';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ct').textContent=timeStr(d,true); document.getElementById('cd').textContent=dateStr(d).toUpperCase(); };
   },
-  'analog': (wrap) => {
-    const size = Math.round(Math.min(window.innerWidth,window.innerHeight)*0.22);
-    wrap.className = 'clock-analog';
-    wrap.innerHTML = `<canvas id="analCvs" width="${size}" height="${size}"></canvas>`;
-    analCanvas = document.getElementById('analCvs');
-    analCtx = analCanvas.getContext('2d');
+  'analog':(wrap)=>{
+    const sz=Math.round(Math.min(window.innerWidth,window.innerHeight)*.22);
+    wrap.className='clock-analog';
+    wrap.innerHTML=`<canvas id="analCvs" width="${sz}" height="${sz}"></canvas>`;
+    analCanvas=document.getElementById('analCvs'); analCtx=analCanvas.getContext('2d');
     return renderAnalog;
   },
-  'neon': (wrap) => {
-    wrap.className = 'clock-neon';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
+  'sundial':(wrap)=>{
+    const sz=Math.round(Math.min(window.innerWidth,window.innerHeight)*.44);
+    const sh=Math.round(sz*.64);
+    wrap.className='clock-sundial';
+    wrap.innerHTML=`<canvas id="sundialCvs" width="${sz}" height="${sh}"></canvas>`;
+    sundialCanvas=document.getElementById('sundialCvs'); sundialCtx=sundialCanvas.getContext('2d');
+    return renderSundial;
   },
-  'editorial': (wrap) => {
-    wrap.className = 'clock-editorial';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
+  'editorial':(wrap)=>{
+    wrap.className='clock-editorial';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
   },
-  'handwritten': (wrap) => {
-    wrap.className = 'clock-handwritten';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=hhmm(d); document.getElementById('cd').textContent=dateStr(d); };
+  'handwritten':(wrap)=>{
+    wrap.className='clock-handwritten';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ct').textContent=hhmm(d); document.getElementById('cd').textContent=dateStr(d); };
   },
-  'brutalist': (wrap) => {
-    wrap.className = 'clock-brutalist';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
+  'brutalist':(wrap)=>{
+    wrap.className='clock-brutalist';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
   },
-  'roman': (wrap) => {
-    wrap.className = 'clock-roman';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); const h=d.getHours()%12||12,m=d.getMinutes(); document.getElementById('ct').textContent=`${toRoman(h)} · ${toRoman(m||60)}`; document.getElementById('cd').textContent=`${DAYS[d.getDay()].toUpperCase()} · ${MONTHS[d.getMonth()].toUpperCase()} ${toRoman(d.getDate())}`; };
+  'roman':(wrap)=>{
+    wrap.className='clock-roman';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); const h=d.getHours()%12||12,m=d.getMinutes(); document.getElementById('ct').textContent=`${toRoman(h)} · ${toRoman(m||60)}`; document.getElementById('cd').textContent=`${DAYS[d.getDay()].toUpperCase()} · ${MONTHS[d.getMonth()].toUpperCase()} ${toRoman(d.getDate())}`; };
   },
-  'whisper': (wrap) => {
-    wrap.className = 'clock-whisper';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=timeStr(d,true); document.getElementById('cd').textContent=dateStr(d); };
+  'whisper':(wrap)=>{
+    wrap.className='clock-whisper';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ct').textContent=timeStr(d,true); document.getElementById('cd').textContent=dateStr(d); };
   },
-  'lcd': (wrap) => {
-    wrap.className = 'clock-lcd';
-    wrap.innerHTML = `<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
+  'lcd':(wrap)=>{
+    wrap.className='clock-lcd';
+    wrap.innerHTML=`<div class="time" id="ct"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ct').textContent=timeStr(d,false); document.getElementById('cd').textContent=shortDate(d); };
   },
-  'split': (wrap) => {
-    wrap.className = 'clock-split';
-    wrap.innerHTML = `<div class="hours" id="ch"></div><div class="mins" id="cm"></div><div class="date" id="cd"></div>`;
-    return () => { const d=new Date(); document.getElementById('ch').textContent=pad(d.getHours()%12||12); document.getElementById('cm').textContent=pad(d.getMinutes()); document.getElementById('cd').textContent=shortDate(d); };
+  'split':(wrap)=>{
+    wrap.className='clock-split';
+    wrap.innerHTML=`<div class="hours" id="ch"></div><div class="mins" id="cm"></div><div class="date" id="cd"></div>`;
+    return ()=>{ const d=new Date(); document.getElementById('ch').textContent=pad(d.getHours()%12||12); document.getElementById('cm').textContent=pad(d.getMinutes()); document.getElementById('cd').textContent=shortDate(d); };
   }
 };
 
-// ── ACTIVATE CLOCK ──
-function activateClock(style) {
+function activateClock(style){
   clearInterval(clockTimer);
-  analCanvas = null; analCtx = null;
-  const wrap = document.getElementById('clockWrap');
-  wrap.className = 'hidden';
-  wrap.removeAttribute('style');
-  setTimeout(() => {
-    const tick = CLOCK_BUILDERS[style](wrap);
-    tick();
-    clockTimer = setInterval(tick, 1000);
-    wrap.classList.remove('hidden');
-  }, 400);
+  analCanvas=null; analCtx=null; sundialCanvas=null; sundialCtx=null;
+  const wrap=document.getElementById('clockWrap');
+  wrap.className='hidden'; wrap.removeAttribute('style');
+  setTimeout(()=>{
+    const tick=CLOCK_BUILDERS[style](wrap);
+    tick(); clockTimer=setInterval(tick,1000); wrap.classList.remove('hidden');
+  },400);
 }
 
 // ── IMAGE LOADING ──
-async function fetchInfo(id) {
-  try {
-    const r = await fetch(`https://picsum.photos/id/${id}/info`);
-    return r.ok ? r.json() : null;
-  } catch { return null; }
-}
+async function fetchInfo(id){ try{const r=await fetch(`https://picsum.photos/id/${id}/info`);return r.ok?r.json():null;}catch{return null;} }
 
-async function showNext() {
-  document.getElementById('nextBtn').disabled = true;
-  barStart();
-  recordInteraction();
-  updateWellbeingUI();
-
-  // Rebuild pool each time so it reflects current wellbeing state
-  if (imgPool.length === 0) buildImgPool();
-  const id = imgPool.shift();
-  session.imgCount++;
-
-  const W = window.innerWidth, H = window.innerHeight;
-  const url = `https://picsum.photos/id/${id}/${W}/${H}`;
-
-  const [info] = await Promise.all([
+async function showNext(){
+  document.getElementById('nextBtn').disabled=true;
+  barStart(); recordInteraction(); updateWellbeingUI();
+  if(imgPool.length===0) buildImgPool();
+  const id=imgPool.shift(); session.imgCount++;
+  const W=window.innerWidth, H=window.innerHeight;
+  const url=`https://picsum.photos/id/${id}/${W}/${H}`;
+  const [info]=await Promise.all([
     fetchInfo(id),
-    new Promise(res => { const img = new Image(); img.src=url; img.onload=res; img.onerror=res; })
+    new Promise(res=>{const img=new Image();img.src=url;img.onload=res;img.onerror=res;})
   ]);
-
-  const frontId = currentBg === 'bg' ? 'bg2' : 'bg';
-  const backId  = currentBg;
-  const front = document.getElementById(frontId);
-  const back  = document.getElementById(backId);
-
-  front.style.backgroundImage = `url('${url}')`;
-  front.style.zIndex = '1';
-  front.style.opacity = '0';
+  const frontId=currentBg==='bg'?'bg2':'bg';
+  const back=document.getElementById(currentBg), front=document.getElementById(frontId);
+  front.style.backgroundImage=`url('${url}')`;
+  front.style.zIndex='1'; front.style.opacity='0';
   front.getBoundingClientRect();
-  back.style.zIndex = '0';
-  front.style.opacity = '1';
-  setTimeout(() => { back.style.backgroundImage = ''; }, 900);
-  currentBg = frontId;
-
-  document.getElementById('imgCount').textContent = `${String(session.imgCount).padStart(3,'0')}`;
-  document.getElementById('photoAuthor').textContent = info ? `Photo · ${info.author}` : `Photo #${id}`;
-  document.getElementById('photoId').textContent = info ? `Picsum ID ${id}` : '';
-
+  back.style.zIndex='0'; front.style.opacity='1';
+  setTimeout(()=>{back.style.backgroundImage='';},900);
+  currentBg=frontId;
+  document.getElementById('imgCount').textContent=String(session.imgCount).padStart(3,'0');
+  document.getElementById('photoAuthor').textContent=info?`Photo · ${info.author}`:`Photo #${id}`;
+  document.getElementById('photoId').textContent=info?`Picsum ID ${id}`:'';
   activateClock(nextClockStyle());
   barDone();
-  document.getElementById('nextBtn').disabled = false;
+  document.getElementById('nextBtn').disabled=false;
 }
 
-// ── PANEL TOGGLE ──
-function openPanel() {
-  panelOpen = true;
-  document.getElementById('wbPanel').classList.add('open');
-  updateWellbeingUI();
-}
-function closePanel() {
-  panelOpen = false;
-  document.getElementById('wbPanel').classList.remove('open');
-}
+// ── PANEL ──
+function openPanel(){ panelOpen=true; document.getElementById('wbPanel').classList.add('open'); updateWellbeingUI(); }
+function closePanel(){ panelOpen=false; document.getElementById('wbPanel').classList.remove('open'); }
 
 // ── INIT ──
-buildMoodButtons();
-buildImgPool();
-buildClockPool();
-showNext();
-setInterval(updateWellbeingUI, 10000); // refresh stats every 10s
+buildMoodButtons(); buildImgPool(); buildClockPool();
+ambientLoop(); showNext();
+setInterval(updateWellbeingUI,10000);
 
-// Events
-document.getElementById('wbPill').addEventListener('click', () => panelOpen ? closePanel() : openPanel());
-document.getElementById('wbPanelClose').addEventListener('click', closePanel);
-document.getElementById('breakDismiss').addEventListener('click', () => {
-  document.getElementById('breakBanner').classList.remove('show');
-});
-document.getElementById('wbPanel').addEventListener('click', e => e.stopPropagation());
+// ── EVENTS ──
+document.getElementById('wbPill').addEventListener('click',()=>panelOpen?closePanel():openPanel());
+document.getElementById('wbPanelClose').addEventListener('click',closePanel);
+document.getElementById('breakDismiss').addEventListener('click',()=>document.getElementById('breakBanner').classList.remove('show'));
+document.getElementById('wbPanel').addEventListener('click',e=>e.stopPropagation());
 
-let lastTap = 0;
-const DBL_DELAY = 300;
-function handleDoubleTap() {
-  if (!document.getElementById('nextBtn').disabled) {
-    buildImgPool(); // rebuild with current wellbeing state
-    showNext();
-  }
-}
+let lastTap=0;
+function handleDoubleTap(){ if(!document.getElementById('nextBtn').disabled){buildImgPool();showNext();} }
+document.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTap<300){e.preventDefault();handleDoubleTap();} lastTap=now; },{passive:false});
+document.addEventListener('dblclick',()=>handleDoubleTap());
+document.getElementById('nextBtn').addEventListener('click',e=>{ e.stopPropagation(); if(!document.getElementById('nextBtn').disabled){buildImgPool();showNext();} });
 
-document.addEventListener('touchend', e => {
-  const now = Date.now();
-  if (now - lastTap < DBL_DELAY) { e.preventDefault(); handleDoubleTap(); }
-  lastTap = now;
-}, { passive: false });
-
-document.addEventListener('dblclick', () => handleDoubleTap());
-
-document.getElementById('nextBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  if (!document.getElementById('nextBtn').disabled) { buildImgPool(); showNext(); }
-});
-
-window.addEventListener('resize', () => {
-  if (activeClockStyle === 'analog' && analCanvas) {
-    const size = Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.22);
-    analCanvas.width = size;
-    analCanvas.height = size;
-  }
+window.addEventListener('resize',()=>{
+  resizeAmb();
+  if(activeClockStyle==='analog'&&analCanvas){ const s=Math.round(Math.min(window.innerWidth,window.innerHeight)*.22); analCanvas.width=s; analCanvas.height=s; }
+  if(activeClockStyle==='sundial'&&sundialCanvas){ const s=Math.round(Math.min(window.innerWidth,window.innerHeight)*.44); sundialCanvas.width=s; sundialCanvas.height=Math.round(s*.64); }
 });
 </script>
 </body>
